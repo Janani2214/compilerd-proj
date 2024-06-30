@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-language Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e2e2e2;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .page-title {
+            text-align: center;
+            color: #223d8e;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .editor-section,
+        .output-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin: 0 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px;
+            background-color: #3f51b5;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .language-select {
+            padding: 16px;
+            border: none;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        #language {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-bottom: 1px solid #3f51b5;
+            font-size: 16px;
+            background-color: transparent;
+        }
+
+        .CodeMirror {
+            height: calc(100% - 130px);
+        }
+
+        .submit-button {
+            margin: 16px;
+            padding: 10px 16px;
+            background-color: #3f51b5;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        .submit-button:hover {
+            background-color: #303f9f;
+        }
+
+        .submit-button .material-icons {
+            margin-right: 8px;
+        }
+
+        .output-box {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: monospace;
+            background-color: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .output-box pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <h1 class="page-title">Compilerd</h1>
+        <div class="container">
+            <div class="editor-section">
+                <div class="section-header">Code Editor</div>
+                <div class="language-select">
+                    <select id="language" onchange="changeLanguage()">
+                        <option value="python">Python</option>
+                        <option value="c">C</option>
+                        <option value="cpp">C++</option>
+                        <option value="java">Java</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value="ruby">Ruby</option>
+                        <option value="go">Go</option>
+                    </select>
+                </div>
+                <textarea id="code" name="code"></textarea>
+                <button class="submit-button" onclick="submitCode()">
+                    <i class="material-icons">play_arrow</i>Run Code
+                </button>
+            </div>
+            <div class="output-section">
+                <div class="section-header">Output</div>
+                <div id="output" class="output-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/ruby/ruby.min.js"></script>
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+            lineNumbers: true,
+            mode: "python",
+            theme: "material-darker",
+        });
+
+  const languageModes = {
+        'python': 'text/x-python',
+        'c': 'text/x-csrc',
+        'cpp': 'text/x-c++src',
+        'java': 'text/x-java',
+        'nodejs': 'application/javascript',
+        'ruby': 'text/x-ruby',
+        'go': 'text/x-go'
+    };
+
+    function changeLanguage () {
+        var language = document.getElementById("language").value;
+        editor.setOption("mode", languageModes[language]);
+    }
+
+        async function submitCode () {
+            var language = document.getElementById("language").value;
+            var script = editor.getValue();
+
+            var payload = {
+                "language": language,
+                "script": script
+            };
+
+            try {
+                let response = await fetch('http://localhost:3000/api/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                let result = await response.json();
+                displayOutput(result);
+            } catch (error) {
+                console.error('Error:', error);
+                displayOutput({ errorMessage: 'An error occurred while processing the request.' });
+            }
+        }
+
+        function displayOutput (result) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+            if (result.errorMessage) {
+                outputDiv.innerHTML = `<pre>${result.errorMessage}</pre>`;
+            } else {
+                outputDiv.innerHTML = `<pre>${result.output}</pre>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
